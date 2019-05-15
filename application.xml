@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<board type="Arduino Nano" name="Simple Nano Ethernet"> <info>An ethernet controlled arduino nano</info>
+
+<devices>
+    <device name="Ethernet" type="ENC28J60">
+    </device>
+</devices>
+
+<modules>
+    <module>HTTP Get Server</module>
+    <module>Task</module>
+</modules>
+
+<custom_code>
+    <file>application.cpp</file>
+</custom_code>
+
+<defines>
+    <define>ENC28J60_BUFFER_SIZE 128</define>
+</defines>
+
+<logging>
+    <log_module>APPLICATION</log_module>
+</logging>
+
+<raat protocol="url"></raat>
+</board>
