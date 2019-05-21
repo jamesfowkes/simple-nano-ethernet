@@ -4,6 +4,7 @@
 
 <devices>
     <device name="Ethernet" type="ENC28J60">
+        <setting id="cs_pin" value="10"></setting>
     </device>
 </devices>
 
