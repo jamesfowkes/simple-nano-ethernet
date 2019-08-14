@@ -21,16 +21,33 @@ typedef struct _timeout
 static HTTPGetServer s_server(true);
 static const raat_devices_struct * s_pDevices = NULL;
 
-static bool s_output_states[10]
+#if NRELAYS == 2
+#define INITIAL_RELAY_STATES false, false, false, false
+#define INITIAL_TIMEOUT_STATES {0, false}, {0, false}, \
+{0, false}, {0, false}
+#elif NRELAYS == 4
+#define INITIAL_RELAY_STATES false, false, false, false false, false
+#define INITIAL_TIMEOUT_STATES {0, false}, {0, false}, \
+{0, false}, {0, false}, {0, false}, {0, false}
+#elif NRELAYS == 8
+#define INITIAL_RELAY_STATES false, false, false, false false, false false, false false, false
+#define INITIAL_TIMEOUT_STATES {0, false}, {0, false}, \
+{0, false}, {0, false}, {0, false}, {0, false}, {0, false}, {0, false}, {0, false}, {0, false}
+#else
+#error "NRELAYS expected to be 2, 4 or 8"
+#endif
+
+#define MAX_OUTPUT (NRELAYS + 1)
+
+static bool s_output_states[NRELAYS+2]
 {
     // 0 and 1 are ignored - having them in the array make indexing easier
-    false, false, false, false, false, false, false, false, false, false
+    INITIAL_RELAY_STATES
 };
 
-static timeout s_timeouts[10]
+static timeout s_timeouts[NRELAYS+2]
 {
-    {0, false}, {0, false}, {0, false}, {0, false}, {0, false},
-    {0, false}, {0, false}, {0, false}, {0, false}, {0, false}
+    INITIAL_TIMEOUT_STATES
 };
 
 typedef void (*output_setter_fn)(int32_t);
@@ -84,7 +101,7 @@ static void get_input(char const * const url)
 
     if (success = raat_parse_single_numeric(pInputPin, input_pin, NULL))
     {
-        success = ((input_pin >= 0) && (input_pin <= 5));
+        success = ((input_pin >= MIN_INPUT) && (input_pin <= MAX_INPUT));
 
         if (success)
         {
@@ -127,7 +144,7 @@ static void nontimed_output_handler(char const * const pOutputUrl, output_setter
 
     if (success = raat_parse_single_numeric(pOutputUrl, output_pin, NULL))
     {
-        success = ((output_pin >= 2) && (output_pin <= 10));
+        success = ((output_pin >= 2) && (output_pin <= (NRELAYS+2)));
         if (success)
         {
             pOutputSetterFn(output_pin);
@@ -151,7 +168,7 @@ static void timed_output_handler(char const * const pOutputUrl, output_setter_fn
     {
         if (success = raat_parse_single_numeric(pTime+1, timeout, NULL))
         {
-            success = ((output_pin >= 2) && (output_pin <= 10));
+            success = ((output_pin >= 2) && (output_pin <= (NRELAYS+2)));
             success &= timeout > 100;
 
             if (success)
@@ -229,7 +246,7 @@ char * ethernet_response_provider()
 static void timeout_task_fn(RAATTask& task, void * pTaskData)
 {
     (void)task; (void)pTaskData;
-    for (uint8_t output = 2; output <= 9; output++)
+    for (uint8_t output = MIN_OUTPUT; output <= MAX_OUTPUT; output++)
     {
         if (s_timeouts[output].active && s_timeouts[output].time > 0)
         {
@@ -250,12 +267,12 @@ void raat_custom_setup(const raat_devices_struct& devices, const raat_params_str
 
     s_pDevices = &devices;
 
-    for (uint8_t i = 2; i <= 10; i++)
+    for (uint8_t i = MIN_OUTPUT; i <= MAX_OUTPUT; i++)
     {
         pinMode(i, OUTPUT);
     }
 
-    for (uint8_t i = A0; i <= A5; i++)
+    for (uint8_t i = MIN_INPUT; i <= MAX_INPUT; i++)
     {
         pinMode(i, INPUT_PULLUP);
     }

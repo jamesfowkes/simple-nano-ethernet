@@ -19,11 +19,15 @@
 
 <defines>
     <define>ENC28J60_BUFFER_SIZE 128</define>
+    <define>NRELAYS 2</define>
+    <define>MIN_OUTPUT 2</define>
+    <define>MIN_INPUT A0</define>
+    <define>MAX_INPUT A5</define>
 </defines>
 
 <logging>
     <log_module>APPLICATION</log_module>
 </logging>
 
-<raat protocol="url"></raat>
+<raat protocol="url" loglevel="RAAT_LOG_LEVEL_DEBUG">></raat>
 </board>
