@@ -18,7 +18,7 @@ typedef struct _timeout
     bool active;
 } timeout;
 
-static HTTPGetServer s_server(true);
+static HTTPGetServer s_server(NULL);
 static const raat_devices_struct * s_pDevices = NULL;
 
 static bool s_output_states[10]
@@ -73,16 +73,18 @@ static void send_standard_erm_response()
     s_server.finish_headers();
 }
 
-static void get_input(char const * const url)
+static void get_input(char const * const url, char const * const end)
 {
+    (void)url;
+
     int32_t input_pin;
-    char * pInputPin = &url[11];
+    char const * const pInputPin = end;
 
     bool success = false;
 
     send_standard_erm_response();
 
-    if (success = raat_parse_single_numeric(pInputPin, input_pin, NULL))
+    if ((success = raat_parse_single_numeric(pInputPin, input_pin, NULL)))
     {
         success = ((input_pin >= 0) && (input_pin <= 5));
 
@@ -125,7 +127,7 @@ static void nontimed_output_handler(char const * const pOutputUrl, output_setter
 
     send_standard_erm_response();
 
-    if (success = raat_parse_single_numeric(pOutputUrl, output_pin, NULL))
+    if ((success = raat_parse_single_numeric(pOutputUrl, output_pin, NULL)))
     {
         success = ((output_pin >= 2) && (output_pin <= 10));
         if (success)
@@ -147,9 +149,9 @@ static void timed_output_handler(char const * const pOutputUrl, output_setter_fn
 
     send_standard_erm_response();
 
-    if (success = raat_parse_single_numeric(pOutputUrl, output_pin, &pTime))
+    if ((success = raat_parse_single_numeric(pOutputUrl, output_pin, &pTime)))
     {
-        if (success = raat_parse_single_numeric(pTime+1, timeout, NULL))
+        if ((success = raat_parse_single_numeric(pTime+1, timeout, NULL)))
         {
             success = ((output_pin >= 2) && (output_pin <= 10));
             success &= timeout > 100;
@@ -164,35 +166,41 @@ static void timed_output_handler(char const * const pOutputUrl, output_setter_fn
     set_bool_response(success);
 }
 
-static void set_output(char const * const url)
+static void set_output(char const * const url, char const * const end)
 {
-    nontimed_output_handler(&url[12], do_set);
+    (void)url;
+    nontimed_output_handler(end+1, do_set);
 }
 
-static void toggle_output(char const * const url)
+static void toggle_output(char const * const url, char const * const end)
 {
-    nontimed_output_handler(&url[15], do_toggle);
+    (void)url;
+    nontimed_output_handler(end+1, do_toggle);
 }
 
-static void clear_output(char const * const url)
+static void clear_output(char const * const url, char const * const end)
 {
-    nontimed_output_handler(&url[14], do_clear);
+    (void)url;
+    nontimed_output_handler(end+1, do_clear);
 }
 
-static void timed_set_output(char const * const url)
+static void timed_set_output(char const * const url, char const * const end)
 {
-    timed_output_handler(&url[17], do_set);
+    (void)url;
+    timed_output_handler(end+1, do_set);
 }
 
 
-static void timed_toggle_output(char const * const url)
+static void timed_toggle_output(char const * const url, char const * const end)
 {
-    timed_output_handler(&url[20], do_toggle);
+    (void)url;
+    timed_output_handler(end+1, do_toggle);
 }
 
-static void timed_clear_output(char const * const url)
+static void timed_clear_output(char const * const url, char const * const end)
 {
-    timed_output_handler(&url[19], do_clear);
+    (void)url;
+    timed_output_handler(end+1, do_clear);
 }
 
 
@@ -258,6 +266,13 @@ void raat_custom_setup(const raat_devices_struct& devices, const raat_params_str
     for (uint8_t i = A0; i <= A5; i++)
     {
         pinMode(i, INPUT_PULLUP);
+    }
+
+    uint8_t default_on_outputs[] = DEFAULT_ON;
+    const uint8_t number_of_on_outputs = sizeof(default_on_outputs);
+    for (uint8_t i=0; i<number_of_on_outputs; i++)
+    {
+        do_set(default_on_outputs[i]);
     }
 }
 
