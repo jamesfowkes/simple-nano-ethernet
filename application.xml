@@ -4,6 +4,7 @@
 
 <devices>
     <device name="Ethernet" type="ENC28J60">
+        <setting id="cs_pin" value="10"></setting>
     </device>
 </devices>
 
@@ -18,11 +19,16 @@
 
 <defines>
     <define>ENC28J60_BUFFER_SIZE 128</define>
+    <define>NRELAYS 8</define>
+    <define>MIN_OUTPUT 3</define>
+    <define>MIN_INPUT A0</define>
+    <define>MAX_INPUT A5</define>
+    <define>DEFAULT_ON {3, 4, 5, 6, 7, 8}</define>
 </defines>
 
 <logging>
     <log_module>APPLICATION</log_module>
 </logging>
 
-<raat protocol="url"></raat>
+<raat protocol="url" loglevel="RAAT_LOG_LEVEL_DEBUG">></raat>
 </board>
