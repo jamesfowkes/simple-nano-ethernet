@@ -17,6 +17,14 @@
     <file>application.cpp</file>
 </custom_code>
 
+<parameters>
+    <parameter name="SerialURL" type="String">
+        <setting id="reset_value" value=""/>
+        <setting id="length" value="32"/>
+        <setting id="use_eeprom" value="false"/>
+    </parameter>
+</parameters>
+
 <defines>
     <define>ENC28J60_BUFFER_SIZE 128</define>
     <define>NRELAYS 8</define>

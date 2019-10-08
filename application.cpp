@@ -50,7 +50,21 @@ static timeout s_timeouts[NRELAYS+2]
     INITIAL_TIMEOUT_STATES
 };
 
+static bool bSerialMode = false;
+
 typedef void (*output_setter_fn)(int32_t);
+
+static void send_response(char const * const pResponse)
+{
+    if (bSerialMode)
+    {
+        Serial.print(pResponse);
+    }
+    else
+    {
+        s_server.add_body_P(pResponse);
+    }
+}
 
 static void do_set(int32_t output_pin)
 {
@@ -85,9 +99,12 @@ static void start_timeout(int32_t timeout, int32_t output_pin)
 
 static void send_standard_erm_response()
 {
-    s_server.set_response_code_P(PSTR("200 OK"));
-    s_server.set_header_P(PSTR("Access-Control-Allow-Origin"), PSTR("*"));
-    s_server.finish_headers();
+    if (!bSerialMode)
+    {
+        s_server.set_response_code_P(PSTR("200 OK"));
+        s_server.set_header_P(PSTR("Access-Control-Allow-Origin"), PSTR("*"));
+        s_server.finish_headers();
+    }
 }
 
 static void get_input(char const * const url, char const * const end)
@@ -109,18 +126,18 @@ static void get_input(char const * const url, char const * const end)
         {
             if (digitalRead(A0+input_pin) == HIGH)
             {
-                s_server.add_body_P(PSTR("1\r\n\r\n"));
+                send_response(PSTR("1\r\n\r\n"));
             }
             else
             {
-                s_server.add_body_P(PSTR("0\r\n\r\n"));   
+                send_response(PSTR("0\r\n\r\n"));   
             }
         }
     }
 
     if (!success)
     {
-        s_server.add_body_P(PSTR("?\r\n\r\n"));
+        send_response(PSTR("?\r\n\r\n"));
     }
 }
 
@@ -128,11 +145,11 @@ static void set_bool_response(bool success)
 {
     if (success)
     {
-        s_server.add_body_P(PSTR("OK\r\n\r\n"));
+        send_response(PSTR("OK\r\n\r\n"));
     }
     else
     {
-        s_server.add_body_P(PSTR("?\r\n\r\n"));
+        send_response(PSTR("?\r\n\r\n"));
     }
 }
 
@@ -296,6 +313,30 @@ void raat_custom_setup(const raat_devices_struct& devices, const raat_params_str
 
 void raat_custom_loop(const raat_devices_struct& devices, const raat_params_struct& params)
 {
-    (void)devices; (void)params;
+    (void)devices;
     s_timeout_task.run();
+
+    if (params.pSerialURL->strlen())
+    {
+        char url[32];
+        params.pSerialURL->get(url);
+        http_get_handler * pHandler = s_server.match_handler_url(url, s_handlers);
+        if (pHandler)
+        {
+            Serial.print("Handling URL '");
+            Serial.print(url);
+            Serial.println("''.");
+            bSerialMode = true;
+            pHandler->fn(url);
+            bSerialMode = false;
+        }
+        else
+        {
+            Serial.print("URL '");
+            Serial.print(url);
+            Serial.println("'' not recognised.");
+        }
+        params.pSerialURL->reset();
+    }
+
 }
