@@ -58,13 +58,15 @@ static void send_response(char const * const pResponse)
 {
     if (bSerialMode)
     {
-        Serial.print(pResponse);
+        raat_logln_P(LOG_APP, pResponse);
+        bSerialMode = false;
     }
     else
     {
         s_server.add_body_P(pResponse);
     }
 }
+
 
 static void do_set(int32_t output_pin)
 {
@@ -92,9 +94,11 @@ static void do_clear(int32_t output_pin)
 
 static void start_timeout(int32_t timeout, int32_t output_pin)
 {
-    raat_logln_P(LOG_APP, PSTR("Starting %" PRIi32 " timeout on output %" PRIi32), timeout, output_pin);
-    s_timeouts[output_pin].time = (timeout / 100) * 100;;
+    s_timeouts[output_pin].time = (timeout / 100) * 100;
     s_timeouts[output_pin].active = true;
+    raat_logln_P(LOG_APP, PSTR("Starting %" PRIi32 " timeout on output %" PRIi32),
+        s_timeouts[output_pin].time, output_pin
+    );
 }
 
 static void send_standard_erm_response()
@@ -169,6 +173,10 @@ static void nontimed_output_handler(char const * const pOutputUrl, output_setter
             pOutputSetterFn(output_pin);
         }
     }
+    else
+    {
+        raat_logln_P(LOG_APP, PSTR("Could not parse %s"), pOutputUrl);
+    }
     set_bool_response(success);
 }
 
@@ -196,7 +204,16 @@ static void timed_output_handler(char const * const pOutputUrl, output_setter_fn
                 start_timeout(timeout, output_pin);
             }
         }
+        else
+        {
+            raat_logln_P(LOG_APP, PSTR("Could not parse %s"), pTime+1);
+        }
     }
+    else
+    {
+        raat_logln_P(LOG_APP, PSTR("Could not parse %s"), pOutputUrl);
+    }
+
     set_bool_response(success);
 }
 
@@ -275,10 +292,9 @@ static void timeout_task_fn(RAATTask& task, void * pTaskData)
     {
         if (s_timeouts[output].active && s_timeouts[output].time > 0)
         {
-            s_timeouts[output].time -= 100;   
+            s_timeouts[output].time -= 100;
             if (s_timeouts[output].time == 0)
             {
-                raat_logln_P(LOG_APP, PSTR("Timeout finish on output %" PRIu8), output);
                 do_toggle(output);
             }
         }
@@ -318,25 +334,23 @@ void raat_custom_loop(const raat_devices_struct& devices, const raat_params_stru
 
     if (params.pSerialURL->strlen())
     {
-        char url[32];
-        params.pSerialURL->get(url);
-        http_get_handler * pHandler = s_server.match_handler_url(url, s_handlers);
+        static char url[40] = "";
+        params.pSerialURL->get(url, 40);
+
+        http_get_handler const * const pHandler = s_server.match_handler_url(url, s_handlers);
+
         if (pHandler)
         {
-            Serial.print("Handling URL '");
-            Serial.print(url);
-            Serial.println("''.");
+            uint16_t handler_fixed_length = raat_board_strlen_progmem(pHandler->url);
+            char const * const pEnd = url + handler_fixed_length;
+            raat_logln_P(LOG_APP, PSTR("Handling URL '%s'."), url);
             bSerialMode = true;
-            pHandler->fn(url);
-            bSerialMode = false;
+            pHandler->fn(url, pEnd);
         }
         else
         {
-            Serial.print("URL '");
-            Serial.print(url);
-            Serial.println("'' not recognised.");
+            raat_logln_P(LOG_APP, PSTR("URL '%s' not found."), url);
         }
-        params.pSerialURL->reset();
+        params.pSerialURL->set("");
     }
-
 }

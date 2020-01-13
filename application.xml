@@ -20,7 +20,7 @@
 <parameters>
     <parameter name="SerialURL" type="String">
         <setting id="reset_value" value=""/>
-        <setting id="length" value="32"/>
+        <setting id="length" value="40"/>
         <setting id="use_eeprom" value="false"/>
     </parameter>
 </parameters>
@@ -38,5 +38,5 @@
     <log_module>APPLICATION</log_module>
 </logging>
 
-<raat protocol="url" loglevel="RAAT_LOG_LEVEL_DEBUG">></raat>
+<raat protocol="simple"></raat>
 </board>
